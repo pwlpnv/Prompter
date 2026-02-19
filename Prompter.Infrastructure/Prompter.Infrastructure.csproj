@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Prompter.Core\Prompter.Core.csproj" />
+      <ProjectReference Include="..\Prompter.Data\Prompter.Data.csproj" />
+      <ProjectReference Include="..\Prompter.Services\Prompter.Services.csproj" />
+    </ItemGroup>
+
+</Project>

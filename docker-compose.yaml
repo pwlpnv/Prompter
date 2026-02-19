@@ -1,0 +1,7 @@
+﻿services:
+  prompter.web:
+    image: prompter.web
+    build:
+      context: .
+      dockerfile: Prompter.Web/Dockerfile
+
