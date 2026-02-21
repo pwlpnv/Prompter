@@ -1,3 +1,11 @@
-﻿namespace Prompter.Web.DTOs;
+using Prompter.Core.Enums;
 
-public record PromptDetails(int Id, string Prompt, Status Status, string Response);
+namespace Prompter.Web.DTOs;
+
+public record PromptDetails(
+    int Id,
+    string Prompt,
+    PromptStatus Status,
+    string? Response,
+    DateTime CreatedAt,
+    DateTime? CompletedAt);

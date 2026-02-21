@@ -4,6 +4,26 @@
     build:
       context: .
       dockerfile: Prompter.Web/Dockerfile
+    ports:
+      - "5251:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=prompter;Username=postgres;Password=postgres
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - postgres
+
+  prompter.worker:
+    image: prompter.worker
+    build:
+      context: .
+      dockerfile: Prompter.Worker/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=prompter;Username=postgres;Password=postgres
+      - Ollama__BaseUrl=http://ollama:11434
+      - Ollama__Model=phi3
+    depends_on:
+      - postgres
+      - ollama
 
   ollama:
     image: ollama/ollama:latest
@@ -25,7 +45,7 @@
     image: postgres:17
     container_name: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
