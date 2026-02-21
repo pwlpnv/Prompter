@@ -1,4 +1,14 @@
 ﻿services:
+  prompter.client:
+    image: prompter.client
+    build:
+      context: ./Prompter.Client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - prompter.web
+
   prompter.web:
     image: prompter.web
     build:
