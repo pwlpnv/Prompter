@@ -69,7 +69,7 @@ export function PromptForm({ onSubmit }: Props) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Enter your prompt (can be multi-line)..."
+            placeholder="Enter your prompt..."
             rows={5}
             style={{ width: "100%", fontFamily: "inherit" }}
           />
