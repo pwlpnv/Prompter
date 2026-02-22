@@ -36,6 +36,10 @@ public class OllamaLlmClient : ILlmClient
             chatOptions,
             cancellationToken);
 
-        return completion.Value.Content[0].Text;
+        var content = completion.Value.Content;
+        if (content is null || content.Count == 0 || string.IsNullOrEmpty(content[0].Text))
+            return "[No response from LLM]";
+
+        return content[0].Text;
     }
 }

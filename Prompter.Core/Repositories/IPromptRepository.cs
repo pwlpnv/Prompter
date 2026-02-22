@@ -5,10 +5,10 @@ namespace Prompter.Core.Repositories;
 
 public interface IPromptRepository
 {
-    Task AddRangeAsync(IEnumerable<Prompt> prompts);
-    Task<IEnumerable<Prompt>> GetAllAsync();
-    Task<Prompt?> GetByIdAsync(int id);
-    Task<IEnumerable<Prompt>> GetByStatusAsync(PromptStatus status);
-    Task UpdateAsync(Prompt prompt);
-    Task<(IEnumerable<Prompt> Items, int TotalCount)> GetPagedAsync(int skip, int take);
+    Task AddRangeAsync(IEnumerable<Prompt> prompts, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Prompt>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<Prompt?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Prompt>> GetByStatusAsync(PromptStatus status, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Prompt prompt, CancellationToken cancellationToken = default);
+    Task<(IEnumerable<Prompt> Items, int TotalCount)> GetPagedAsync(int skip, int take, CancellationToken cancellationToken = default);
 }

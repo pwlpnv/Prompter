@@ -40,7 +40,7 @@ public class PromptProcessingService : BackgroundService
             {
                 if (stoppingToken.IsCancellationRequested) break;
 
-                prompt.Status = PromptStatus.Processing;
+                prompt.MarkAsProcessing();
                 await repository.UpdateAsync(prompt);
 
                 try
@@ -49,9 +49,7 @@ public class PromptProcessingService : BackgroundService
 
                     var response = await llmClient.GenerateAsync(prompt.Text, stoppingToken);
 
-                    prompt.Response = response;
-                    prompt.Status = PromptStatus.Completed;
-                    prompt.CompletedAt = DateTime.UtcNow;
+                    prompt.Complete(response);
 
                     _logger.LogInformation("Prompt {Id} completed", prompt.Id);
                 }
@@ -59,12 +57,13 @@ public class PromptProcessingService : BackgroundService
                 {
                     _logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
 
-                    prompt.Status = PromptStatus.Failed;
-                    prompt.CompletedAt = DateTime.UtcNow;
+                    prompt.Fail();
                 }
 
                 await repository.UpdateAsync(prompt);
             }
+
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
     }
 }

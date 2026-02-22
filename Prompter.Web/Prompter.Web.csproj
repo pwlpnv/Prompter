@@ -26,6 +26,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Prompter.Core\Prompter.Core.csproj" />
       <ProjectReference Include="..\Prompter.Infrastructure\Prompter.Infrastructure.csproj" />
+      <ProjectReference Include="..\Prompter.Services\Prompter.Services.csproj" />
     </ItemGroup>
 
 </Project>
