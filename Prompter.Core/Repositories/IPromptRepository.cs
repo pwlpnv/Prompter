@@ -14,7 +14,7 @@ public interface IPromptRepository
     /// Must be called within an active transaction.
     /// For higher throughput, consider replacing DB polling with RabbitMQ via MassTransit.
     /// </summary>
-    Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, TimeSpan staleTimeout, CancellationToken cancellationToken = default);
 
     Task<PagedResult<Prompt>> GetPagedAsync(int skip, int take, CancellationToken cancellationToken = default);
 }

@@ -13,17 +13,20 @@ public class PromptRepository(PrompterDbContext context) : IPromptRepository
         await context.Prompts.AddRangeAsync(prompts, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, TimeSpan staleTimeout, CancellationToken cancellationToken = default)
     {
+        var staleThreshold = DateTime.UtcNow - staleTimeout;
+
         return await context.Prompts
             .FromSqlRaw(
                 """
                 SELECT * FROM "Prompts"
                 WHERE "Status" = 'Pending'
+                   OR ("Status" = 'Processing' AND "StartedProcessingAt" < {1})
                 ORDER BY "CreatedAt"
                 LIMIT {0}
                 FOR UPDATE SKIP LOCKED
-                """, take)
+                """, take, staleThreshold)
             .ToListAsync(cancellationToken);
     }
 

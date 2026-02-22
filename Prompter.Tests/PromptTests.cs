@@ -28,11 +28,23 @@ public class PromptTests
         prompt.Status.Should().Be(PromptStatus.Processing);
     }
 
+    [Fact]
+    public void Process_WhenAlreadyProcessing_ResetsTimestamp()
+    {
+        var prompt = new Prompt("test");
+        prompt.Process();
+        var firstTimestamp = prompt.StartedProcessingAt;
+
+        prompt.Process();
+
+        prompt.Status.Should().Be(PromptStatus.Processing);
+        prompt.StartedProcessingAt.Should().BeOnOrAfter(firstTimestamp!.Value);
+    }
+
     [Theory]
-    [InlineData(PromptStatus.Processing)]
     [InlineData(PromptStatus.Completed)]
     [InlineData(PromptStatus.Failed)]
-    public void Process_WhenNotPending_Throws(PromptStatus initialStatus)
+    public void Process_WhenCompletedOrFailed_Throws(PromptStatus initialStatus)
     {
         var prompt = CreatePromptWithStatus(initialStatus);
 

@@ -10,12 +10,17 @@ public class Prompt(string text)
     public PromptStatus Status { get; private set; } = PromptStatus.Pending;
     public string? Response { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
+    public DateTime? StartedProcessingAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
 
     public void Process()
     {
-        Guard.Against.Expression(status => status != PromptStatus.Pending, Status, "Can only process a prompt that is in Pending status.");
+        Guard.Against.Expression(
+            status => status != PromptStatus.Pending && status != PromptStatus.Processing,
+            Status,
+            "Can only process a prompt that is in Pending or stale Processing status.");
         Status = PromptStatus.Processing;
+        StartedProcessingAt = DateTime.UtcNow;
     }
 
     public void Complete(string response)

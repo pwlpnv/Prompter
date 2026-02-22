@@ -1,3 +1,4 @@
+using Prompter.Core.Entities;
 using Prompter.Core.Services;
 using Prompter.Core.UnitOfWork;
 
@@ -10,6 +11,7 @@ public class PromptProcessingService(IServiceScopeFactory scopeFactory, ILogger<
     private static readonly TimeSpan IdleDelay = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan BatchCooldown = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan ErrorRetryDelay = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan StaleTimeout = TimeSpan.FromMinutes(5);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -37,57 +39,72 @@ public class PromptProcessingService(IServiceScopeFactory scopeFactory, ILogger<
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var llmClient = scope.ServiceProvider.GetRequiredService<ILlmClient>();
+        var promptProcessor = scope.ServiceProvider.GetRequiredService<IPromptProcessor>();
 
-        // Transaction wraps the entire claim + process cycle.
-        // If the worker crashes, the transaction rolls back and prompts return to Pending.
-        await unitOfWork.BeginTransactionAsync(stoppingToken);
+        var claimedPrompts = await ClaimPromptsAsync(unitOfWork, stoppingToken);
+
+        if (claimedPrompts.Count == 0)
+        {
+            await Task.Delay(IdleDelay, stoppingToken);
+            return;
+        }
+
+        logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
+
+        foreach (var prompt in claimedPrompts)
+        {
+            if (stoppingToken.IsCancellationRequested) break;
+            await promptProcessor.ProcessAsync(prompt, stoppingToken);
+        }
+
+        await SaveResultsAsync(unitOfWork, stoppingToken);
+        await Task.Delay(BatchCooldown, stoppingToken);
+    }
+
+    private async Task<IReadOnlyList<Prompt>> ClaimPromptsAsync(
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            var claimedPrompts = await unitOfWork.Prompts.ClaimPendingAsync(BatchSize, stoppingToken);
+            var prompts = await unitOfWork.Prompts
+                .ClaimPendingAsync(BatchSize, StaleTimeout, cancellationToken);
 
-            if (claimedPrompts.Count == 0)
+            if (prompts.Count == 0)
             {
-                await unitOfWork.RollbackTransactionAsync(stoppingToken);
-                await Task.Delay(IdleDelay, stoppingToken);
-                return;
+                await unitOfWork.RollbackTransactionAsync(cancellationToken);
+                return prompts;
             }
 
-            logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
-
-            foreach (var prompt in claimedPrompts)
-            {
-                if (stoppingToken.IsCancellationRequested) break;
-
+            foreach (var prompt in prompts)
                 prompt.Process();
 
-                try
-                {
-                    logger.LogInformation("Processing prompt {Id}: {Text}", prompt.Id, prompt.Text);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                    var response = await llmClient.GenerateAsync(prompt.Text, stoppingToken);
-
-                    prompt.Complete(response);
-
-                    logger.LogInformation("Prompt {Id} completed", prompt.Id);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
-                    prompt.Fail();
-                }
-            }
-
-            await unitOfWork.SaveChangesAsync(stoppingToken);
-            await unitOfWork.CommitTransactionAsync(stoppingToken);
+            return prompts;
         }
         catch
         {
             await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
             throw;
         }
+    }
 
-        await Task.Delay(BatchCooldown, stoppingToken);
+    private static async Task SaveResultsAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitTransactionAsync(cancellationToken);
+        }
+        catch
+        {
+            await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
+        }
     }
 }

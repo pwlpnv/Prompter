@@ -36,6 +36,7 @@ public static class DependencyInjection
         // Let's use scoped, since there are no info about thread-safety of this class
         // also t seems we can't use HttpClientFactory with this client
         services.AddScoped<ILlmClient, OllamaLlmClient>();
+        services.AddScoped<IPromptProcessor, PromptProcessor>();
 
         return services;
     }

@@ -27,6 +27,8 @@ public class PromptConfiguration : IEntityTypeConfiguration<Prompt>
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 
+        builder.Property(p => p.StartedProcessingAt);
+
         builder.HasIndex(p => p.Status);
     }
 }
