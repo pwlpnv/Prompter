@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Prompter.Core.Entities;
 using Prompter.Services;
@@ -14,30 +15,16 @@ public class PromptsController(IPromptService promptService) : ControllerBase
         [FromBody] CreatePromptsRequest request,
         CancellationToken cancellationToken)
     {
-        var validPrompts = request.Prompts
-            .Where(p => !string.IsNullOrWhiteSpace(p))
-            .ToArray();
-
-        if (validPrompts.Length == 0)
-            return BadRequest("All prompts are empty or whitespace.");
-
-        var tooLong = validPrompts.FirstOrDefault(p => p.Length > 4000);
-        if (tooLong is not null)
-            return BadRequest("Each prompt must be 4000 characters or fewer.");
-
-        var prompts = await promptService.CreatePromptsAsync(validPrompts, cancellationToken);
+        var prompts = await promptService.CreatePromptsAsync(request.Prompts, cancellationToken);
         return StatusCode(201, prompts.Select(ToDto));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetPrompts(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery][Range(1, int.MaxValue / 100)] int page = 1,
+        [FromQuery][Range(1, 100)] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        if (page < 1) return BadRequest("page must be at least 1.");
-        if (pageSize < 1) return BadRequest("pageSize must be at least 1.");
-
         var skip = (page - 1) * pageSize;
         var result = await promptService.GetPromptsPagedAsync(skip, pageSize, cancellationToken);
         return Ok(new PagedResponse<PromptDetails>(result.Items.Select(ToDto), result.TotalCount));
