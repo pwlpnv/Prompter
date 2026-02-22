@@ -19,10 +19,4 @@ public class UnitOfWork(PrompterDbContext context) : IUnitOfWork
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await context.SaveChangesAsync(cancellationToken);
-
-    public async ValueTask DisposeAsync()
-    {
-        if (context.Database.CurrentTransaction is not null)
-            await context.Database.CurrentTransaction.DisposeAsync();
-    }
 }

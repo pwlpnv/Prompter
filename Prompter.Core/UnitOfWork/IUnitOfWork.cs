@@ -2,7 +2,7 @@ using Prompter.Core.Repositories;
 
 namespace Prompter.Core.UnitOfWork;
 
-public interface IUnitOfWork : IAsyncDisposable
+public interface IUnitOfWork
 {
     IPromptRepository Prompts { get; }
 
