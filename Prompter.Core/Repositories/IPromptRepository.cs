@@ -1,5 +1,4 @@
 using Prompter.Core.Entities;
-using Prompter.Core.Enums;
 using Prompter.Core.Models;
 
 namespace Prompter.Core.Repositories;

@@ -37,6 +37,7 @@ public static class DependencyInjection
         // also t seems we can't use HttpClientFactory with this client
         services.AddScoped<ILlmClient, OllamaLlmClient>();
         services.AddScoped<IPromptProcessor, PromptProcessor>();
+        services.AddScoped<IPromptBatchOrchestrator, PromptBatchOrchestrator>();
 
         return services;
     }

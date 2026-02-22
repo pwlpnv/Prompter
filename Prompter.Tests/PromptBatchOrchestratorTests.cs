@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Prompter.Core.Entities;
-using Prompter.Core.Enums;
 using Prompter.Core.Repositories;
 using Prompter.Core.Services;
 using Prompter.Core.UnitOfWork;
