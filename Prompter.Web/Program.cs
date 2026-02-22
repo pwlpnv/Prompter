@@ -14,7 +14,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.ConfigureSharedServices(builder.Configuration);
-builder.Services.ConfigureWebServices();
+builder.Services.ConfigureWebServices(builder.Configuration);
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>

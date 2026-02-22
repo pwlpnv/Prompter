@@ -14,9 +14,6 @@ public class UnitOfWork(PrompterDbContext context) : IUnitOfWork
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default) =>
         await context.Database.CommitTransactionAsync(cancellationToken);
 
-    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default) =>
-        await context.Database.RollbackTransactionAsync(cancellationToken);
-
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await context.SaveChangesAsync(cancellationToken);
 }

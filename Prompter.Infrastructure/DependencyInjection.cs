@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,22 +23,49 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection ConfigureWebServices(this IServiceCollection services)
+    public static IServiceCollection ConfigureWebServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<IPromptService, PromptService>();
+
+        services.AddMassTransit(x =>
+        {
+            x.AddEntityFrameworkOutbox<PrompterDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.UseBusOutbox();
+            });
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(configuration.GetValue<string>("RabbitMQ:Host") ?? "localhost");
+            });
+        });
 
         return services;
     }
 
-    public static IServiceCollection ConfigureWorkerServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureWorkerServices(this IServiceCollection services, IConfiguration configuration,
+        Action<IBusRegistrationConfigurator> configureBus)
     {
         services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
-        
-        // Let's use scoped, since there are no info about thread-safety of this class
-        // also t seems we can't use HttpClientFactory with this client
         services.AddScoped<ILlmClient, OllamaLlmClient>();
-        services.AddScoped<IPromptProcessor, PromptProcessor>();
-        services.AddScoped<IPromptBatchOrchestrator, PromptBatchOrchestrator>();
+
+        services.AddMassTransit(x =>
+        {
+            configureBus(x);
+
+            x.AddEntityFrameworkOutbox<PrompterDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.UseBusOutbox();
+            });
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(configuration.GetValue<string>("RabbitMQ:Host") ?? "localhost");
+                cfg.ConfigureEndpoints(context);
+            });
+        });
 
         return services;
     }

@@ -1,6 +1,8 @@
 using FluentAssertions;
+using MassTransit;
 using NSubstitute;
 using Prompter.Core.Entities;
+using Prompter.Core.Messages;
 using Prompter.Core.Models;
 using Prompter.Core.Repositories;
 using Prompter.Core.UnitOfWork;
@@ -12,12 +14,13 @@ public class PromptServiceTests
 {
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IPromptRepository _promptRepository = Substitute.For<IPromptRepository>();
+    private readonly IPublishEndpoint _publishEndpoint = Substitute.For<IPublishEndpoint>();
     private readonly PromptService _sut;
 
     public PromptServiceTests()
     {
         _unitOfWork.Prompts.Returns(_promptRepository);
-        _sut = new PromptService(_unitOfWork);
+        _sut = new PromptService(_unitOfWork, _publishEndpoint);
     }
 
     [Fact]
@@ -30,7 +33,7 @@ public class PromptServiceTests
         await _promptRepository.Received(1).AddRangeAsync(
             Arg.Is<IEnumerable<Prompt>>(p => p.Count() == 2),
             Arg.Any<CancellationToken>());
-        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

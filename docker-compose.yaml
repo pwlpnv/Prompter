@@ -1,4 +1,4 @@
-﻿services:
+services:
   prompter.client:
     image: prompter.client
     build:
@@ -9,6 +9,23 @@
     depends_on:
       - prompter.web
 
+  rabbitmq:
+    build:
+      context: ./RabbitMQ
+      dockerfile: Dockerfile
+    hostname: rabbitmq
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   prompter.web:
     image: prompter.web
     build:
@@ -18,9 +35,12 @@
       - "5251:8080"
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   prompter.worker:
@@ -30,10 +50,13 @@
       dockerfile: Prompter.Worker/Dockerfile
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
       - Ollama__BaseUrl=http://ollama:11434
       - Ollama__Model=phi3
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       ollama:
         condition: service_started
@@ -67,3 +90,4 @@
 volumes:
   ollama_data:
   postgres_data:
+  rabbitmq_data:
