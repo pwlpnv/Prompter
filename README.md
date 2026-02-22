@@ -11,6 +11,8 @@ cp .env.template .env
 docker compose up --build
 ```
 
+> **Note:** The first startup may take a while because Ollama needs to pull the model. Processing the first message will also be slower as the model loads into memory.
+
 This starts:
 
 - **Frontend** at http://localhost:3000
