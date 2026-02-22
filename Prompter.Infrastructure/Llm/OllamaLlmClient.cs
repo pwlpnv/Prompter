@@ -1,3 +1,4 @@
+#pragma warning disable SCME0001
 using System.ClientModel;
 using Microsoft.Extensions.Options;
 using OpenAI.Chat;
@@ -24,10 +25,9 @@ public class OllamaLlmClient : ILlmClient
 
     public async Task<string> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
     {
-        var chatOptions = new ChatCompletionOptions
-        {
-            MaxOutputTokenCount = _options.MaxTokens
-        };
+        var chatOptions = new ChatCompletionOptions();
+        // this is experimental, but the way to force ollama to respect max_tokens for now
+        chatOptions.Patch.Set("$.max_tokens"u8, BinaryData.FromString(_options.MaxTokens.ToString()));
 
         var completion = await _chatClient.CompleteChatAsync(
             [new UserChatMessage(prompt)],

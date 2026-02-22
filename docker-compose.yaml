@@ -1,4 +1,4 @@
-services:
+﻿services:
   prompter.client:
     image: prompter.client
     build:
@@ -46,14 +46,6 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull phi3 && wait"]
-    # TODO: Remove gpu
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   postgres:
     image: postgres:17
