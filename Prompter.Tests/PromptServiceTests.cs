@@ -45,30 +45,33 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public async Task CreatePromptsAsync_NullArray_Throws()
+    public async Task CreatePromptsAsync_NullArray_ThrowsWithoutSaving()
     {
         var act = () => _sut.CreatePromptsAsync(null!);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CreatePromptsAsync_EmptyArray_Throws()
+    public async Task CreatePromptsAsync_EmptyArray_ThrowsWithoutSaving()
     {
         var act = () => _sut.CreatePromptsAsync([]);
 
         await act.Should().ThrowAsync<ArgumentException>();
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
     [InlineData("  \t  ")]
-    public async Task CreatePromptsAsync_WhitespaceText_Throws(string whitespace)
+    public async Task CreatePromptsAsync_WhitespaceText_ThrowsWithoutSaving(string whitespace)
     {
         var act = () => _sut.CreatePromptsAsync([whitespace]);
 
         await act.Should().ThrowAsync<ArgumentException>();
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

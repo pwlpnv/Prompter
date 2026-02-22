@@ -1,7 +1,7 @@
 using Prompter.Core.Entities;
 using Prompter.Core.Models;
 
-namespace Prompter.Services;
+namespace Prompter.Core.Services;
 
 public interface IPromptService
 {

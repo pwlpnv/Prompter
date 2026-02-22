@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Prompter.Core.Entities;
 using Prompter.Core.Services;
 
-namespace Prompter.Infrastructure.Llm;
+namespace Prompter.Services;
 
 public class PromptProcessor(ILlmClient llmClient, ILogger<PromptProcessor> logger) : IPromptProcessor
 {

@@ -1,6 +1,7 @@
 using Ardalis.GuardClauses;
 using Prompter.Core.Entities;
 using Prompter.Core.Models;
+using Prompter.Core.Services;
 using Prompter.Core.UnitOfWork;
 
 namespace Prompter.Services;

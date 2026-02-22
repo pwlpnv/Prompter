@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Prompter.Core.Entities;
+using Prompter.Core.Services;
 using Prompter.Services;
 using Prompter.Web.DTOs;
 
