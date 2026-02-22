@@ -7,8 +7,6 @@ namespace Prompter.Core.Repositories;
 public interface IPromptRepository
 {
     Task AddRangeAsync(IEnumerable<Prompt> prompts, CancellationToken cancellationToken = default);
-    Task<Prompt?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Prompt>> GetByStatusAsync(PromptStatus status, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Selects pending prompts with row-level locking (FOR UPDATE SKIP LOCKED) so multiple
@@ -18,11 +16,5 @@ public interface IPromptRepository
     /// </summary>
     Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, CancellationToken cancellationToken = default);
 
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
-    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
-    Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
-
-    Task UpdateAsync(Prompt prompt, CancellationToken cancellationToken = default);
     Task<PagedResult<Prompt>> GetPagedAsync(int skip, int take, CancellationToken cancellationToken = default);
 }

@@ -16,7 +16,7 @@ public class OllamaLlmClient : ILlmClient
 
         var clientOptions = new OpenAI.OpenAIClientOptions
         {
-            Endpoint = new Uri(_options.BaseUrl + "/v1")
+            Endpoint = new Uri($"{_options.BaseUrl}/v1")
         };
 
         _chatClient = new ChatClient(_options.Model, new ApiKeyCredential("ollama"), clientOptions);

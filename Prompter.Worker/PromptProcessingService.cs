@@ -1,27 +1,19 @@
-using Prompter.Core.Repositories;
 using Prompter.Core.Services;
+using Prompter.Core.UnitOfWork;
 
 namespace Prompter.Worker;
 
-public class PromptProcessingService : BackgroundService
+public class PromptProcessingService(IServiceScopeFactory scopeFactory, ILogger<PromptProcessingService> logger)
+    : BackgroundService
 {
     private const int BatchSize = 10;
     private static readonly TimeSpan IdleDelay = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan BatchCooldown = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan ErrorRetryDelay = TimeSpan.FromSeconds(10);
 
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<PromptProcessingService> _logger;
-
-    public PromptProcessingService(IServiceScopeFactory scopeFactory, ILogger<PromptProcessingService> logger)
-    {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("PromptProcessingService started");
+        logger.LogInformation("PromptProcessingService started");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -35,7 +27,7 @@ public class PromptProcessingService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in processing loop, retrying in {Delay}s", ErrorRetryDelay.TotalSeconds);
+                logger.LogError(ex, "Unexpected error in processing loop, retrying in {Delay}s", ErrorRetryDelay.TotalSeconds);
                 await Task.Delay(ErrorRetryDelay, stoppingToken);
             }
         }
@@ -43,26 +35,26 @@ public class PromptProcessingService : BackgroundService
 
     private async Task ProcessPendingPromptsAsync(CancellationToken stoppingToken)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IPromptRepository>();
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var llmClient = scope.ServiceProvider.GetRequiredService<ILlmClient>();
 
         // Transaction wraps the entire claim + process cycle.
         // If the worker crashes, the transaction rolls back and prompts return to Pending.
-        await repository.BeginTransactionAsync(stoppingToken);
+        await unitOfWork.BeginTransactionAsync(stoppingToken);
 
         try
         {
-            var claimedPrompts = await repository.ClaimPendingAsync(BatchSize, stoppingToken);
+            var claimedPrompts = await unitOfWork.Prompts.ClaimPendingAsync(BatchSize, stoppingToken);
 
             if (claimedPrompts.Count == 0)
             {
-                await repository.RollbackTransactionAsync(stoppingToken);
+                await unitOfWork.RollbackTransactionAsync(stoppingToken);
                 await Task.Delay(IdleDelay, stoppingToken);
                 return;
             }
 
-            _logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
+            logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
 
             foreach (var prompt in claimedPrompts)
             {
@@ -72,28 +64,27 @@ public class PromptProcessingService : BackgroundService
 
                 try
                 {
-                    _logger.LogInformation("Processing prompt {Id}: {Text}", prompt.Id, prompt.Text);
+                    logger.LogInformation("Processing prompt {Id}: {Text}", prompt.Id, prompt.Text);
 
                     var response = await llmClient.GenerateAsync(prompt.Text, stoppingToken);
 
                     prompt.Complete(response);
 
-                    _logger.LogInformation("Prompt {Id} completed", prompt.Id);
+                    logger.LogInformation("Prompt {Id} completed", prompt.Id);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    _logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
-
+                    logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
                     prompt.Fail();
                 }
             }
 
-            await repository.SaveChangesAsync(stoppingToken);
-            await repository.CommitTransactionAsync(stoppingToken);
+            await unitOfWork.SaveChangesAsync(stoppingToken);
+            await unitOfWork.CommitTransactionAsync(stoppingToken);
         }
         catch
         {
-            await repository.RollbackTransactionAsync(stoppingToken);
+            await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
             throw;
         }
 

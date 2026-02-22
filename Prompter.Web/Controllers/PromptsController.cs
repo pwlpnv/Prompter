@@ -7,15 +7,8 @@ namespace Prompter.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PromptsController : ControllerBase
+public class PromptsController(IPromptService promptService) : ControllerBase
 {
-    private readonly IPromptService _promptService;
-
-    public PromptsController(IPromptService promptService)
-    {
-        _promptService = promptService;
-    }
-
     [HttpPost]
     public async Task<ActionResult<IEnumerable<PromptDetails>>> CreatePrompts(
         [FromBody] CreatePromptsRequest request,
@@ -32,7 +25,7 @@ public class PromptsController : ControllerBase
         if (tooLong is not null)
             return BadRequest("Each prompt must be 4000 characters or fewer.");
 
-        var prompts = await _promptService.CreatePromptsAsync(validPrompts, cancellationToken);
+        var prompts = await promptService.CreatePromptsAsync(validPrompts, cancellationToken);
         return StatusCode(201, prompts.Select(ToDto));
     }
 
@@ -46,7 +39,7 @@ public class PromptsController : ControllerBase
         if (pageSize < 1) return BadRequest("pageSize must be at least 1.");
 
         var skip = (page - 1) * pageSize;
-        var result = await _promptService.GetPromptsPagedAsync(skip, pageSize, cancellationToken);
+        var result = await promptService.GetPromptsPagedAsync(skip, pageSize, cancellationToken);
         return Ok(new PagedResponse<PromptDetails>(result.Items.Select(ToDto), result.TotalCount));
     }
 
