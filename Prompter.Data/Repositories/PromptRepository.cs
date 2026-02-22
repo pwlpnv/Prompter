@@ -36,9 +36,7 @@ public class PromptRepository : IPromptRepository
 
     public async Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, CancellationToken cancellationToken = default)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-
-        var prompts = await _context.Prompts
+        return await _context.Prompts
             .FromSqlRaw(
                 """
                 SELECT * FROM "Prompts"
@@ -48,16 +46,26 @@ public class PromptRepository : IPromptRepository
                 FOR UPDATE SKIP LOCKED
                 """, take)
             .ToListAsync(cancellationToken);
+    }
 
-        foreach (var prompt in prompts)
-        {
-            prompt.Process();
-        }
-
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
         await _context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+    }
 
-        return prompts;
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.Database.CommitTransactionAsync(cancellationToken);
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.Database.RollbackTransactionAsync(cancellationToken);
     }
 
     public async Task UpdateAsync(Prompt prompt, CancellationToken cancellationToken = default)

@@ -47,38 +47,54 @@ public class PromptProcessingService : BackgroundService
         var repository = scope.ServiceProvider.GetRequiredService<IPromptRepository>();
         var llmClient = scope.ServiceProvider.GetRequiredService<ILlmClient>();
 
-        var claimedPrompts = await repository.ClaimPendingAsync(BatchSize, stoppingToken);
+        // Transaction wraps the entire claim + process cycle.
+        // If the worker crashes, the transaction rolls back and prompts return to Pending.
+        await repository.BeginTransactionAsync(stoppingToken);
 
-        if (claimedPrompts.Count == 0)
+        try
         {
-            await Task.Delay(IdleDelay, stoppingToken);
-            return;
+            var claimedPrompts = await repository.ClaimPendingAsync(BatchSize, stoppingToken);
+
+            if (claimedPrompts.Count == 0)
+            {
+                await repository.RollbackTransactionAsync(stoppingToken);
+                await Task.Delay(IdleDelay, stoppingToken);
+                return;
+            }
+
+            _logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
+
+            foreach (var prompt in claimedPrompts)
+            {
+                if (stoppingToken.IsCancellationRequested) break;
+
+                prompt.Process();
+
+                try
+                {
+                    _logger.LogInformation("Processing prompt {Id}: {Text}", prompt.Id, prompt.Text);
+
+                    var response = await llmClient.GenerateAsync(prompt.Text, stoppingToken);
+
+                    prompt.Complete(response);
+
+                    _logger.LogInformation("Prompt {Id} completed", prompt.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
+
+                    prompt.Fail();
+                }
+            }
+
+            await repository.SaveChangesAsync(stoppingToken);
+            await repository.CommitTransactionAsync(stoppingToken);
         }
-
-        _logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
-
-        foreach (var prompt in claimedPrompts)
+        catch
         {
-            if (stoppingToken.IsCancellationRequested) break;
-
-            try
-            {
-                _logger.LogInformation("Processing prompt {Id}: {Text}", prompt.Id, prompt.Text);
-
-                var response = await llmClient.GenerateAsync(prompt.Text, stoppingToken);
-
-                prompt.Complete(response);
-
-                _logger.LogInformation("Prompt {Id} completed", prompt.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to process prompt {Id}", prompt.Id);
-
-                prompt.Fail();
-            }
-
-            await repository.UpdateAsync(prompt);
+            await repository.RollbackTransactionAsync(stoppingToken);
+            throw;
         }
 
         await Task.Delay(BatchCooldown, stoppingToken);
