@@ -8,6 +8,8 @@ namespace Prompter.Infrastructure.Llm;
 public class OllamaLlmClient : ILlmClient
 {
     private readonly ChatClient _chatClient;
+    
+    //TODO: remove or raise the limit
     private readonly int _maxTokens;
 
     public OllamaLlmClient(IConfiguration configuration)
