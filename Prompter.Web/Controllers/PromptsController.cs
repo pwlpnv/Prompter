@@ -42,6 +42,9 @@ public class PromptsController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
+        if (page < 1) return BadRequest("page must be at least 1.");
+        if (pageSize < 1) return BadRequest("pageSize must be at least 1.");
+
         var skip = (page - 1) * pageSize;
         var result = await _promptService.GetPromptsPagedAsync(skip, pageSize, cancellationToken);
         return Ok(new PagedResponse<PromptDetails>(result.Items.Select(ToDto), result.TotalCount));
