@@ -1,5 +1,5 @@
 using System.ClientModel;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using Prompter.Core.Services;
 
@@ -8,29 +8,25 @@ namespace Prompter.Infrastructure.Llm;
 public class OllamaLlmClient : ILlmClient
 {
     private readonly ChatClient _chatClient;
-    
-    //TODO: remove or raise the limit
-    private readonly int _maxTokens;
+    private readonly OllamaOptions _options;
 
-    public OllamaLlmClient(IConfiguration configuration)
+    public OllamaLlmClient(IOptions<OllamaOptions> options)
     {
-        var baseUrl = configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
-        var model = configuration["Ollama:Model"] ?? "phi3";
-        _maxTokens = int.TryParse(configuration["Ollama:MaxTokens"], out var mt) ? mt : 40;
+        _options = options.Value;
 
-        var options = new OpenAI.OpenAIClientOptions
+        var clientOptions = new OpenAI.OpenAIClientOptions
         {
-            Endpoint = new Uri(baseUrl + "/v1")
+            Endpoint = new Uri(_options.BaseUrl + "/v1")
         };
 
-        _chatClient = new ChatClient(model, new ApiKeyCredential("ollama"), options);
+        _chatClient = new ChatClient(_options.Model, new ApiKeyCredential("ollama"), clientOptions);
     }
 
     public async Task<string> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
     {
         var chatOptions = new ChatCompletionOptions
         {
-            MaxOutputTokenCount = _maxTokens
+            MaxOutputTokenCount = _options.MaxTokens
         };
 
         var completion = await _chatClient.CompleteChatAsync(
@@ -40,7 +36,7 @@ public class OllamaLlmClient : ILlmClient
 
         var content = completion.Value.Content;
         if (content is null || content.Count == 0 || string.IsNullOrEmpty(content[0].Text))
-            return "[No response from LLM]";
+            throw new InvalidOperationException("LLM returned empty or null response.");
 
         return content[0].Text;
     }

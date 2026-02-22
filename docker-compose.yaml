@@ -1,4 +1,4 @@
-﻿services:
+services:
   prompter.client:
     image: prompter.client
     build:
@@ -17,7 +17,7 @@
     ports:
       - "5251:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=prompter;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       postgres:
@@ -29,7 +29,7 @@
       context: .
       dockerfile: Prompter.Worker/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=prompter;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Ollama__BaseUrl=http://ollama:11434
       - Ollama__Model=phi3
     depends_on:
@@ -61,13 +61,13 @@
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: prompter
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -75,4 +75,3 @@
 volumes:
   ollama_data:
   postgres_data:
-

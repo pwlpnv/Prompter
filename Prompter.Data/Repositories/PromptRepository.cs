@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Prompter.Core.Entities;
 using Prompter.Core.Enums;
+using Prompter.Core.Models;
 using Prompter.Core.Repositories;
 
 namespace Prompter.Data.Repositories;
@@ -20,22 +21,16 @@ public class PromptRepository : IPromptRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Prompt>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        return await _context.Prompts
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<Prompt?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.Prompts.FindAsync([id], cancellationToken);
     }
 
-    public async Task<IEnumerable<Prompt>> GetByStatusAsync(PromptStatus status, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Prompt>> GetByStatusAsync(PromptStatus status, int take, CancellationToken cancellationToken = default)
     {
         return await _context.Prompts
             .Where(p => p.Status == status)
+            .Take(take)
             .ToListAsync(cancellationToken);
     }
 
@@ -45,11 +40,11 @@ public class PromptRepository : IPromptRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<(IEnumerable<Prompt> Items, int TotalCount)> GetPagedAsync(int skip, int take, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Prompt>> GetPagedAsync(int skip, int take, CancellationToken cancellationToken = default)
     {
         var query = _context.Prompts.OrderByDescending(p => p.CreatedAt);
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
-        return (items, totalCount);
+        return new PagedResult<Prompt>(items, totalCount);
     }
 }

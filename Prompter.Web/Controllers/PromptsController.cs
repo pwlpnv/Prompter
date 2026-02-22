@@ -21,12 +21,6 @@ public class PromptsController : ControllerBase
         [FromBody] CreatePromptsRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.Prompts is null || request.Prompts.Length == 0)
-            return BadRequest("At least one prompt is required.");
-
-        if (request.Prompts.Length > 50)
-            return BadRequest("Maximum 50 prompts per request.");
-
         var validPrompts = request.Prompts
             .Where(p => !string.IsNullOrWhiteSpace(p))
             .ToArray();
@@ -44,21 +38,16 @@ public class PromptsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetPrompts(
-        [FromQuery] int? page,
-        [FromQuery] int? pageSize,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        if (page.HasValue && pageSize.HasValue)
-        {
-            var skip = (page.Value - 1) * pageSize.Value;
-            var (items, totalCount) = await _promptService.GetPromptsPagedAsync(skip, pageSize.Value, cancellationToken);
-            return Ok(new PagedResponse<PromptDetails>(items.Select(ToDto), totalCount));
-        }
-
-        var prompts = await _promptService.GetAllPromptsAsync(cancellationToken);
-        return Ok(prompts.Select(ToDto));
+        var skip = (page - 1) * pageSize;
+        var result = await _promptService.GetPromptsPagedAsync(skip, pageSize, cancellationToken);
+        return Ok(new PagedResponse<PromptDetails>(result.Items.Select(ToDto), result.TotalCount));
     }
 
+    // Simple inline mapping; for more complex scenarios we would use AutoMapper or a dedicated mapping class.
     private static PromptDetails ToDto(Prompt p) =>
         new(p.Id, p.Text, p.Status, p.Response, p.CreatedAt, p.CompletedAt);
 }

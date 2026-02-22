@@ -13,11 +13,12 @@ builder.Services.AddControllers()
     });
 builder.Services.ConfigureSharedServices(builder.Configuration);
 builder.Services.ConfigureWebServices();
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -25,6 +26,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Auto-migrate for dev convenience; in production we would run migrations as a separate CI/CD step.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PrompterDbContext>();

@@ -31,8 +31,8 @@ public static class DependencyInjection
 
     public static IServiceCollection ConfigureWorkerServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<ILlmClient>(sp =>
-            new OllamaLlmClient(configuration));
+        services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
+        services.AddSingleton<ILlmClient, OllamaLlmClient>();
 
         return services;
     }

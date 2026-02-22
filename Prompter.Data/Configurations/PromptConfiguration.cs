@@ -22,7 +22,7 @@ public class PromptConfiguration : IEntityTypeConfiguration<Prompt>
             .HasConversion<string>();
 
         builder.Property(p => p.Response)
-            .HasColumnType("text");
+            .HasMaxLength(10000);
 
         builder.Property(p => p.CreatedAt)
             .IsRequired();

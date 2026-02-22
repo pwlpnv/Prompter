@@ -20,7 +20,7 @@ public class Prompt
         CreatedAt = DateTime.UtcNow;
     }
 
-    public void MarkAsProcessing()
+    public void Process()
     {
         Status = PromptStatus.Processing;
     }
