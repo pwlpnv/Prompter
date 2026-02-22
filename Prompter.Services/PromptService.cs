@@ -24,4 +24,9 @@ public class PromptService : IPromptService
     {
         return await _repository.GetAllAsync();
     }
+
+    public async Task<(IEnumerable<Prompt> Items, int TotalCount)> GetPromptsPagedAsync(int skip, int take)
+    {
+        return await _repository.GetPagedAsync(skip, take);
+    }
 }

@@ -44,4 +44,12 @@ public class PromptRepository : IPromptRepository
         _context.Prompts.Update(prompt);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<(IEnumerable<Prompt> Items, int TotalCount)> GetPagedAsync(int skip, int take)
+    {
+        var query = _context.Prompts.OrderByDescending(p => p.CreatedAt);
+        var totalCount = await query.CountAsync();
+        var items = await query.Skip(skip).Take(take).ToListAsync();
+        return (items, totalCount);
+    }
 }

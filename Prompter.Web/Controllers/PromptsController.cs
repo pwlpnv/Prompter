@@ -24,8 +24,15 @@ public class PromptsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PromptDetails>>> GetPrompts()
+    public async Task<IActionResult> GetPrompts([FromQuery] int? page, [FromQuery] int? pageSize)
     {
+        if (page.HasValue && pageSize.HasValue)
+        {
+            var skip = (page.Value - 1) * pageSize.Value;
+            var (items, totalCount) = await _promptService.GetPromptsPagedAsync(skip, pageSize.Value);
+            return Ok(new PagedResponse<PromptDetails>(items.Select(ToDto), totalCount));
+        }
+
         var prompts = await _promptService.GetAllPromptsAsync();
         return Ok(prompts.Select(ToDto));
     }
