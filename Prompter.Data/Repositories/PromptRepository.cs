@@ -34,6 +34,32 @@ public class PromptRepository : IPromptRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Prompt>> ClaimPendingAsync(int take, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        var prompts = await _context.Prompts
+            .FromSqlRaw(
+                """
+                SELECT * FROM "Prompts"
+                WHERE "Status" = 'Pending'
+                ORDER BY "CreatedAt"
+                LIMIT {0}
+                FOR UPDATE SKIP LOCKED
+                """, take)
+            .ToListAsync(cancellationToken);
+
+        foreach (var prompt in prompts)
+        {
+            prompt.Process();
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return prompts;
+    }
+
     public async Task UpdateAsync(Prompt prompt, CancellationToken cancellationToken = default)
     {
         _context.Prompts.Update(prompt);

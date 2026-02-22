@@ -1,4 +1,3 @@
-using Prompter.Core.Enums;
 using Prompter.Core.Repositories;
 using Prompter.Core.Services;
 
@@ -48,22 +47,19 @@ public class PromptProcessingService : BackgroundService
         var repository = scope.ServiceProvider.GetRequiredService<IPromptRepository>();
         var llmClient = scope.ServiceProvider.GetRequiredService<ILlmClient>();
 
-        var pendingPrompts = await repository.GetByStatusAsync(PromptStatus.Pending, take: BatchSize);
+        var claimedPrompts = await repository.ClaimPendingAsync(BatchSize, stoppingToken);
 
-        if (pendingPrompts.Count == 0)
+        if (claimedPrompts.Count == 0)
         {
             await Task.Delay(IdleDelay, stoppingToken);
             return;
         }
 
-        _logger.LogInformation("Found {Count} pending prompts", pendingPrompts.Count);
+        _logger.LogInformation("Claimed {Count} prompts for processing", claimedPrompts.Count);
 
-        foreach (var prompt in pendingPrompts)
+        foreach (var prompt in claimedPrompts)
         {
             if (stoppingToken.IsCancellationRequested) break;
-
-            prompt.Process();
-            await repository.UpdateAsync(prompt);
 
             try
             {
