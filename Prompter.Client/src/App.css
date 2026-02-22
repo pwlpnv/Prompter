@@ -1,3 +1,27 @@
+.navbar {
+  display: flex;
+  gap: 20px;
+  padding: 12px 20px;
+  background-color: #1976d2;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.navbar a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.navbar a:hover {
+  color: white;
+  text-decoration: none;
+}
+
+.navbar a.active {
+  color: white;
+  border-bottom: 2px solid white;
+}
+
 .container {
   max-width: 900px;
   margin: 0 auto;
@@ -43,4 +67,61 @@ button {
 button:disabled {
   background-color: #999;
   cursor: not-allowed;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.mode-toggle button {
+  background-color: #e0e0e0;
+  color: #333;
+  margin-top: 0;
+}
+
+.mode-toggle button.active {
+  background-color: #1976d2;
+  color: white;
+}
+
+.batch-preview {
+  list-style: none;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.batch-preview li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.batch-item-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.remove-btn {
+  background-color: #c62828;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  margin-top: 0;
+}
+
+a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }

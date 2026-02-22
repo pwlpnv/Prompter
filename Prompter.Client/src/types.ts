@@ -6,3 +6,8 @@ export interface PromptDetails {
   createdAt: string;
   completedAt: string | null;
 }
+
+export interface PagedResponse<T> {
+  items: T[];
+  totalCount: number;
+}
