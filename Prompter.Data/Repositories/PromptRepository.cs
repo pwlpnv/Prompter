@@ -17,16 +17,19 @@ public class PromptRepository(PrompterDbContext context) : IPromptRepository
     {
         var staleThreshold = DateTime.UtcNow - staleTimeout;
 
+        var pending = nameof(PromptStatus.Pending);
+        var processing = nameof(PromptStatus.Processing);
+
         return await context.Prompts
             .FromSqlRaw(
                 """
                 SELECT * FROM "Prompts"
-                WHERE "Status" = 'Pending'
-                   OR ("Status" = 'Processing' AND "StartedProcessingAt" < {1})
+                WHERE "Status" = {2}
+                   OR ("Status" = {3} AND "StartedProcessingAt" < {1})
                 ORDER BY "CreatedAt"
                 LIMIT {0}
                 FOR UPDATE SKIP LOCKED
-                """, take, staleThreshold)
+                """, take, staleThreshold, pending, processing)
             .ToListAsync(cancellationToken);
     }
 
